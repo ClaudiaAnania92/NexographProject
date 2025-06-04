@@ -2,7 +2,6 @@ package com.imp.projectdbms.controller;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Positive;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,38 +10,44 @@ import org.springframework.web.bind.annotation.*;
 
 import com.imp.projectdbms.model.Employee;
 import com.imp.projectdbms.service.EmployeeService;
+import com.imp.projectdbms.validation.AbstractValidationController;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/employees")
 @Validated
-public class EmployeeController {
+public class EmployeeController extends AbstractValidationController {
 
-	@Autowired
-	private EmployeeService employeeService;
+    @Autowired
+    private EmployeeService employeeService;
 
-	@PostMapping("/createEmployee")
-	public ResponseEntity<String> createEmployee(
-	    @RequestParam
-	    @NotBlank(message = "Il nome non può essere vuoto")
-	    @Pattern(regexp = "^[a-zA-Z\\s]+$", message = "Il nome deve contenere solo lettere e spazi")
-	    String name,
+    @PostMapping("/createEmployee")
+    public ResponseEntity<String> createEmployee(
+        @RequestParam String name,
+        @RequestParam int empId) {
 
-	    @RequestParam
-	    @Positive(message = "L'id deve essere un numero positivo")
-	    int empId) {
+        ResponseEntity<String> nameValidation = validateName(name);
+        if (nameValidation != null) {
+            return nameValidation;
+        }
 
-	    boolean saved = employeeService.saveEmployee(name, empId);
-	    if (saved) {
-	        return ResponseEntity.ok("Employee creato con successo!");
-	    } else {
-	        return ResponseEntity
-	            .badRequest()
-	            .body("Errore: Employee con ID " + empId + " già esistente o errore nel salvataggio.");
-	    }
-	}
+        boolean exists = employeeService.employeeExists(empId);
 
+        ResponseEntity<String> idValidation = validateEmployeeId(empId, exists);
+        if (idValidation != null) {
+            return idValidation;
+        }
+
+        boolean saved = employeeService.saveEmployee(name, empId);
+        if (saved) {
+            return ResponseEntity.ok("Employee creato con successo!");
+        } else {
+            return ResponseEntity
+                .badRequest()
+                .body("Errore: Salvataggio fallito per motivi interni.");
+        }
+    }
 
     @GetMapping("/getAll")
     public ResponseEntity<List<Employee>> getAllEmployees() {
@@ -63,32 +68,26 @@ public class EmployeeController {
     }
 
     @GetMapping("/manager/{managerName}")
-    public ResponseEntity<?> getEmployeesByManager(
-        @PathVariable
-        @NotBlank(message = "Il nome del manager non può essere vuoto")
-        @Pattern(regexp = "^[a-zA-Z\\s]+$", message = "Il nome del manager deve contenere solo lettere e spazi")
-        String managerName) {
+    public ResponseEntity<?> getEmployeesByManager(@PathVariable String managerName) {
 
-        // Controllo sul nome
+        ResponseEntity<String> validationError = validateName(managerName);
+        if (validationError != null) {
+            return validationError;
+        }
+
         boolean exists = employeeService.managerExists(managerName);
-        
         if (!exists) {
-            // Caso 1: il manager esiste
             return ResponseEntity.status(404)
                 .body("Errore: il manager \"" + managerName + "\" non esiste nel database.");
         }
 
         List<Employee> employees = employeeService.getEmployeesByManager(managerName);
-
         if (employees.isEmpty()) {
-            // Caso 2: il manager esiste ma non ha dipendenti sotto
             return ResponseEntity.ok("Il manager \"" + managerName + "\" non ha attualmente dipendenti sotto di sé.");
         }
 
-        // Caso 3: il manager esiste e ha almeno un dipendente sotto
         return ResponseEntity.ok(employees);
     }
-
 
     @GetMapping("/jacobTeam")
     public ResponseEntity<List<Employee>> getJacobTeam() {
@@ -100,30 +99,24 @@ public class EmployeeController {
     }
 
     @GetMapping("/managerTeam/{managerName}")
-    public ResponseEntity<?> getManagerTeam(
-        @PathVariable
-        @NotBlank(message = "Il nome del manager non può essere vuoto")
-        @Pattern(regexp = "^[a-zA-Z\\s]+$", message = "Il nome del manager deve contenere solo lettere e spazi")
-        String managerName) {
+    public ResponseEntity<?> getManagerTeam(@PathVariable String managerName) {
 
-        // Controllo sul nome
+        ResponseEntity<String> validationError = validateName(managerName);
+        if (validationError != null) {
+            return validationError;
+        }
+
         boolean exists = employeeService.managerExists(managerName);
-
         if (!exists) {
-            // Caso 1: il manager non esiste
             return ResponseEntity.status(404)
                 .body("Errore: il manager \"" + managerName + "\" non esiste nel database.");
         }
 
         List<Employee> employees = employeeService.getManagerTeam(managerName);
-
         if (employees.isEmpty()) {
-            // Caso 2: il manager esiste ma non ha un team
             return ResponseEntity.ok("Il manager \"" + managerName + "\" non ha un team assegnato.");
         }
 
-        // Caso 3: il manager esiste e ha un team di almeno una persona
         return ResponseEntity.ok(employees);
     }
-
 }

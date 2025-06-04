@@ -17,6 +17,10 @@ public class EmployeeService {
 	public boolean managerExists(String managerName) {
 	    return employeeRepository.managerExists(managerName);
 	}
+	
+	public boolean employeeExists(int empId) {
+	    return employeeRepository.employeeExists(empId);
+	}
 
 
 	public boolean saveEmployee(String name, int empId) {
