@@ -56,18 +56,32 @@ public class EmployeeController {
     }
 
     @GetMapping("/manager/{managerName}")
-    public ResponseEntity<List<Employee>> getEmployeesByManager(
+    public ResponseEntity<?> getEmployeesByManager(
         @PathVariable
         @NotBlank(message = "Il nome del manager non può essere vuoto")
         @Pattern(regexp = "^[a-zA-Z\\s]+$", message = "Il nome del manager deve contenere solo lettere e spazi")
         String managerName) {
 
-        List<Employee> employees = employeeService.getEmployeesByManager(managerName);
-        if (employees.isEmpty()) {
-            return ResponseEntity.noContent().build();
+        // Controllo sul nome
+        boolean exists = employeeService.managerExists(managerName);
+        
+        if (!exists) {
+            // Caso 1: il manager esiste
+            return ResponseEntity.status(404)
+                .body("Errore: il manager \"" + managerName + "\" non esiste nel database.");
         }
+
+        List<Employee> employees = employeeService.getEmployeesByManager(managerName);
+
+        if (employees.isEmpty()) {
+            // Caso 2: il manager esiste ma non ha dipendenti sotto
+            return ResponseEntity.ok("Il manager \"" + managerName + "\" non ha attualmente dipendenti sotto di sé.");
+        }
+
+        // Caso 3: il manager esiste e ha almeno un dipendente sotto
         return ResponseEntity.ok(employees);
     }
+
 
     @GetMapping("/jacobTeam")
     public ResponseEntity<List<Employee>> getJacobTeam() {
@@ -79,16 +93,30 @@ public class EmployeeController {
     }
 
     @GetMapping("/managerTeam/{managerName}")
-    public ResponseEntity<List<Employee>> getManagerTeam(
+    public ResponseEntity<?> getManagerTeam(
         @PathVariable
         @NotBlank(message = "Il nome del manager non può essere vuoto")
         @Pattern(regexp = "^[a-zA-Z\\s]+$", message = "Il nome del manager deve contenere solo lettere e spazi")
         String managerName) {
 
-        List<Employee> employees = employeeService.getManagerTeam(managerName);
-        if (employees.isEmpty()) {
-            return ResponseEntity.noContent().build();
+        // Controllo sul nome
+        boolean exists = employeeService.managerExists(managerName);
+
+        if (!exists) {
+            // Caso 1: il manager non esiste
+            return ResponseEntity.status(404)
+                .body("Errore: il manager \"" + managerName + "\" non esiste nel database.");
         }
+
+        List<Employee> employees = employeeService.getManagerTeam(managerName);
+
+        if (employees.isEmpty()) {
+            // Caso 2: il manager esiste ma non ha un team
+            return ResponseEntity.ok("Il manager \"" + managerName + "\" non ha un team assegnato.");
+        }
+
+        // Caso 3: il manager esiste e ha un team di almeno una persona
         return ResponseEntity.ok(employees);
     }
+
 }

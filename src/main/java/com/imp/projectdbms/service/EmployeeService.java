@@ -13,6 +13,11 @@ public class EmployeeService {
 
 	@Autowired
 	private EmployeeRepository employeeRepository;
+	
+	public boolean managerExists(String managerName) {
+	    return employeeRepository.managerExists(managerName);
+	}
+
 
 	public void saveEmployee(String name, int empId) {
 		employeeRepository.saveEmployee(name, empId);

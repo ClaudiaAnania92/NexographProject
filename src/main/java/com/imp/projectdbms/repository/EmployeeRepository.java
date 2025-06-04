@@ -16,6 +16,19 @@ public class EmployeeRepository {
 
 	@Autowired
 	private Driver driver;
+	
+	public boolean managerExists(String managerName) {
+	    try (Session session = driver.session()) {
+	        String query = "MATCH (m:Employee {name: $name}) RETURN COUNT(m) > 0 AS exists";
+	        return session.executeRead(tx ->
+	            tx.run(query, parameters("name", managerName))
+	              .single()
+	              .get("exists")
+	              .asBoolean()
+	        );
+	    }
+	}
+
 
 	public void saveEmployee(String name, int empId) {
 		try (Session session = driver.session()) {
