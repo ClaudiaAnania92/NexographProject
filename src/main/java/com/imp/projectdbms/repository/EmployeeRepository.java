@@ -28,21 +28,43 @@ public class EmployeeRepository {
 	        );
 	    }
 	}
-
-
-	public void saveEmployee(String name, int empId) {
-		try (Session session = driver.session()) {
-			session.executeWrite(tx -> {
-				String query = "MERGE (e:Employee {emp_id: $empId}) " + "SET e.name = $name";
-				tx.run(query, parameters("empId", empId, "name", name));
-				return null; // la lambda non prevede il void ma un ritorno per cui lo "inganniamo" con un
-								// return null
-			});
-		} catch (Exception e) {
-			System.err.println("Errore nel salvataggio dell'employee " + name + " con ID " + empId);
-			System.err.println("Dettaglio: " + e.getMessage());
-		}
+	
+	public boolean employeeExists(int empId) {
+	    try (Session session = driver.session()) {
+	        return session.executeRead(tx -> {
+	            String query = "MATCH (e:Employee {emp_id: $empId}) RETURN e";
+	            var result = tx.run(query, parameters("empId", empId));
+	            return result.hasNext();
+	        });
+	    } catch (Exception e) {
+	        System.err.println("Errore nel controllo esistenza employee con ID " + empId);
+	        System.err.println("Dettaglio: " + e.getMessage());
+	        return false;
+	    }
 	}
+
+
+
+	public boolean saveEmployee(String name, int empId) {
+	    if (employeeExists(empId)) {
+	        System.err.println("Employee con ID " + empId + " già esistente.");
+	        return false;
+	    }
+	    try (Session session = driver.session()) {
+	        Boolean result = session.executeWrite(tx -> {
+	            String query = "CREATE (e:Employee {emp_id: $empId, name: $name})";
+	            tx.run(query, parameters("empId", empId, "name", name));
+	            return true;
+	        });
+	        return result; //return result != null && result;	-> questo sarebbe più sicuro ma se non vogliamo null possiamo non scriverlo
+	    } catch (Exception e) {
+	        System.err.println("Errore nel salvataggio dell'employee " + name + " con ID " + empId);
+	        System.err.println("Dettaglio: " + e.getMessage());
+	        return false;
+	    }
+	}
+
+
 
 	public List<Employee> getAllEmployees() {
 		List<Employee> employees = new ArrayList<>();

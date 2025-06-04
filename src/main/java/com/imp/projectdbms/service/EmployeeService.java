@@ -19,9 +19,10 @@ public class EmployeeService {
 	}
 
 
-	public void saveEmployee(String name, int empId) {
-		employeeRepository.saveEmployee(name, empId);
+	public boolean saveEmployee(String name, int empId) {
+	    return employeeRepository.saveEmployee(name, empId);
 	}
+
 
 	public List<Employee> getAllEmployees() {
 		return employeeRepository.getAllEmployees();

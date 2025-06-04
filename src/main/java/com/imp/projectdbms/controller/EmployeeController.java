@@ -19,25 +19,32 @@ import java.util.List;
 @Validated
 public class EmployeeController {
 
-    @Autowired
-    private EmployeeService employeeService;
+	@Autowired
+	private EmployeeService employeeService;
 
-    @PostMapping("/")
-    public ResponseEntity<String> createEmployee(
-        @RequestParam
-        @NotBlank(message = "Il nome non può essere vuoto")
-        @Pattern(regexp = "^[a-zA-Z\\s]+$", message = "Il nome deve contenere solo lettere e spazi")
-        String name,
+	@PostMapping("/createEmployee")
+	public ResponseEntity<String> createEmployee(
+	    @RequestParam
+	    @NotBlank(message = "Il nome non può essere vuoto")
+	    @Pattern(regexp = "^[a-zA-Z\\s]+$", message = "Il nome deve contenere solo lettere e spazi")
+	    String name,
 
-        @RequestParam
-        @Positive(message = "L'id deve essere un numero positivo")
-        int empId) {
+	    @RequestParam
+	    @Positive(message = "L'id deve essere un numero positivo")
+	    int empId) {
 
-        employeeService.saveEmployee(name, empId);
-        return ResponseEntity.ok("Employee creato con successo!");
-    }
+	    boolean saved = employeeService.saveEmployee(name, empId);
+	    if (saved) {
+	        return ResponseEntity.ok("Employee creato con successo!");
+	    } else {
+	        return ResponseEntity
+	            .badRequest()
+	            .body("Errore: Employee con ID " + empId + " già esistente o errore nel salvataggio.");
+	    }
+	}
 
-    @GetMapping("/")
+
+    @GetMapping("/getAll")
     public ResponseEntity<List<Employee>> getAllEmployees() {
         List<Employee> employees = employeeService.getAllEmployees();
         if (employees.isEmpty()) {
